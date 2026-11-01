@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#101827">
+<title>ARB Scanner — MVP</title>
+<style>
+:root{--bg:#0b1220;--panel:#131e30;--panel2:#1a2940;--line:#293951;--text:#eef4ff;--muted:#9aabc3;--green:#35d49a;--red:#ff6b78;--blue:#78a9ff}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:15px/1.45 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+header{padding:20px 16px 14px;background:linear-gradient(135deg,#14243b,#0b1220);border-bottom:1px solid var(--line)}
+.wrap{max-width:900px;margin:auto;padding:0 14px}h1{font-size:23px;margin:0 0 4px;letter-spacing:.2px}.sub{color:var(--muted);font-size:13px}
+.pill{display:inline-block;border:1px solid #286b58;color:var(--green);border-radius:99px;padding:3px 9px;font-size:11px;margin-top:10px}
+main{padding:16px 0 42px}.tabs{display:flex;gap:8px;margin-bottom:14px}.tab,button{border:1px solid var(--line);background:var(--panel2);color:var(--text);border-radius:10px;padding:10px 13px;font-weight:650;cursor:pointer}.tab.active{background:#24466e;border-color:#4778b5}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:15px;padding:15px;margin:12px 0}
+h2{font-size:16px;margin:0 0 12px}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+label{display:block;color:var(--muted);font-size:12px;margin:0 0 5px}input,select{width:100%;background:#0c1728;border:1px solid var(--line);color:var(--text);padding:11px;border-radius:9px;font-size:15px;min-width:0}
+input:focus,select:focus{outline:2px solid #4778b5;border-color:transparent}.field{min-width:0}.outcome{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin:9px 0}
+.bookhead{font-size:12px;color:var(--blue);font-weight:700;margin:12px 0 7px}
+button.primary{background:#2768ad;border-color:#397fca;width:100%;margin-top:12px;padding:13px}
+button.secondary{font-size:12px;padding:7px 10px}
+.result{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.metric{background:#0c1728;border:1px solid var(--line);padding:11px;border-radius:10px}.metric small{display:block;color:var(--muted);font-size:11px}.metric strong{font-size:20px;display:block;margin-top:3px}
+.good{color:var(--green)}.bad{color:var(--red)}.notice{color:var(--muted);font-size:12px;margin-top:10px}
+table{width:100%;border-collapse:collapse;font-size:13px;margin-top:10px}td,th{text-align:left;padding:9px 6px;border-bottom:1px solid var(--line)}th{color:var(--muted);font-weight:500}
+.row{display:flex;justify-content:space-between;align-items:center;gap:8px}.hidden{display:none}.saved{display:flex;flex-direction:column;gap:8px}.saveditem{border:1px solid var(--line);border-radius:10px;padding:10px;font-size:13px}
+footer{color:var(--muted);font-size:11px;text-align:center;padding:18px}
+@media(max-width:560px){.wrap{padding:0 12px}.grid{grid-template-columns:1fr 1fr}.result{grid-template-columns:1fr 1fr}.metric:last-child{grid-column:span 2}.card{padding:13px}.outcome{gap:7px}input{padding:10px;font-size:14px}}
+</style>
+</head>
+<body>
+<header><div class="wrap"><h1>⚡ ARB Scanner</h1><div class="sub">Личный сканер коэффициентов · Fonbet + 1xBet</div><span class="pill">MVP · ручной ввод коэффициентов</span></div></header>
+<main class="wrap">
+  <div class="tabs"><button class="tab active" data-mode="live">LIVE</button><button class="tab" data-mode="prematch">PREMATCH</button></div>
+  <section class="card">
+    <div class="row"><h2>Событие и рынок</h2><button class="secondary" id="demo">Заполнить пример</button></div>
+    <div class="grid">
+      <div class="field"><label>Вид спорта</label><select id="sport"><option>Футбол</option><option>Хоккей</option><option>Теннис</option><option>Баскетбол</option><option>Киберспорт</option><option>Другое</option></select></div>
+      <div class="field"><label>Тип рынка</label><select id="market"><option value="2">Исходы 1 / 2</option><option value="3">1X2 (три исхода)</option></select></div>
+      <div class="field" style="grid-column:1/-1"><label>Матч / событие</label><input id="event" placeholder="Например, Команда А — Команда Б"></div>
+      <div class="field"><label>Общая сумма ставок (₽)</label><input id="bank" type="number" min="1" step="1" value="10000"></div>
+      <div class="field"><label>Мин. ROI для подсветки (%)</label><input id="minroi" type="number" step="0.1" value="1"></div>
+    </div>
+    <div class="bookhead">FONBET — коэффициенты</div>
+    <div class="outcome"><div class="field"><label>Исход 1</label><input id="f1" type="number" min="1.01" step="0.01" placeholder="2.10"></div><div class="field" id="f3wrap"><label>Ничья</label><input id="f3" type="number" min="1.01" step="0.01" placeholder="3.30"></div></div>
+    <div class="field"><label id="f2label">Исход 2</label><input id="f2" type="number" min="1.01" step="0.01" placeholder="2.05"></div>
+    <div class="bookhead">1XBET — коэффициенты</div>
+    <div class="outcome"><div class="field"><label>Исход 1</label><input id="x1" type="number" min="1.01" step="0.01" placeholder="2.15"></div><div class="field" id="x3wrap"><label>Ничья</label><input id="x3" type="number" min="1.01" step="0.01" placeholder="3.40"></div></div>
+    <div class="field"><label id="x2label">Исход 2</label><input id="x2" type="number" min="1.01" step="0.01" placeholder="2.10"></div>
+    <button class="primary" id="calc">Рассчитать вилку</button>
+    <div class="notice">Важно: сравнивай одинаковые рынки, периоды матча и правила расчёта. Коэффициенты вводятся вручную; автоматических котировок пока нет.</div>
+  </section>
+  <section class="card" id="results">
+    <h2>Результат расчёта</h2>
+    <div class="result">
+      <div class="metric"><small>ROI</small><strong id="roi">—</strong></div>
+      <div class="metric"><small>Сумма обратных кэфов</small><strong id="sum">—</strong></div>
+      <div class="metric"><small>Прибыль при любом исходе</small><strong id="profit">—</strong></div>
+    </div>
+    <div id="status" class="notice">Введи коэффициенты и нажми «Рассчитать вилку».</div>
+    <div id="stakes"></div>
+    <div class="row" style="margin-top:12px"><button class="secondary" id="save">Сохранить расчёт</button><button class="secondary" id="clear">Очистить</button></div>
+  </section>
+  <section class="card"><div class="row"><h2>История на этом устройстве</h2><button class="secondary" id="wipe">Удалить историю</button></div><div class="saved" id="history"><div class="notice">Сохранённых расчётов пока нет.</div></div></section>
+  <footer>ARB Scanner MVP · Данные хранятся только в этом браузере. Это калькулятор, а не гарантия принятия ставок или прибыли.</footer>
+</main>
+<script>
+let mode='live', last=null;
+const $=id=>document.getElementById(id);
+const num=id=>Number($(id).value);
+const fmt=(n,d=2)=>Number(n).toLocaleString('ru-RU',{minimumFractionDigits:d,maximumFractionDigits:d});
+document.querySelectorAll('.tab').forEach(b=>b.addEventListener('click',()=>{mode=b.dataset.mode;document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('active',x===b));}));
+function marketUI(){const three=$('market').value==='3';$('f3wrap').classList.toggle('hidden',!three);$('x3wrap').classList.toggle('hidden',!three);$('f2label').textContent=three?'Исход 2':'Исход 2';$('x2label').textContent='Исход 2';}
+$('market').addEventListener('change',marketUI);marketUI();
+$('demo').onclick=()=>{ $('event').value='Команда А — Команда Б (пример)';$('f1').value=2.15;$('f2').value=2.08;$('x1').value=2.12;$('x2').value=2.18;$('market').value='2';marketUI(); };
+function calculate(){
+ const three=$('market').value==='3', ids=three?['f1','f3','f2']:['f1','f2'];
+ const books=three?['Фонбет','Фонбет','Фонбет','1xBet','1xBet','1xBet']:['Фонбет','Фонбет','1xBet','1xBet'];
+ const odds=three?[num('f1'),num('f3'),num('f2'),num('x1'),num('x3'),num('x2')]:[num('f1'),num('f2'),num('x1'),num('x2')];
+ if(odds.some(o=>!Number.isFinite(o)||o<=1)){alert('Заполни все коэффициенты значениями больше 1.');return;}
+ const labels=three?['П1','X','П2']:['Исход 1','Исход 2'];
+ const fonbet=three?[num('f1'),num('f3'),num('f2')]:[num('f1'),num('f2')];
+ const oneX=three?[num('x1'),num('x3'),num('x2')]:[num('x1'),num('x2')];
+ const best=labels.map((_,i)=>fonbet[i]>=oneX[i]?[fonbet[i],'Фонбет']:[oneX[i],'1xBet']);
+ const inv=best.reduce((s,x)=>s+1/x[0],0), roi=(1/inv-1)*100, bank=Math.max(0,num('bank')), stakes=best.map(x=>bank*(1/x[0])/inv), returns=stakes.map((s,i)=>s*best[i][0]), profit=bank/inv-bank;
+ last={mode,event:$('event').value||'Без названия',sport:$('sport').value,market:three?'1X2':'2 исхода',best,inv,roi,bank,stakes,returns,profit};
+ $('roi').textContent=fmt(roi)+'%';$('roi').className=roi>=num('minroi')?'good':roi>0?'':'bad';$('sum').textContent=fmt(inv,4);$('profit').textContent=fmt(profit)+' ₽';$('profit').className=profit>0?'good':'bad';
+ $('status').innerHTML=inv<1?'<span class="good">Вилка найдена по введённым коэффициентам.</span>':'<span class="bad">Арбитража нет: сумма обратных коэффициентов ≥ 1.</span>';
+ $('stakes').innerHTML='<table><thead><tr><th>Исход</th><th>БК</th><th>Кэф</th><th>Ставка</th><th>Возврат</th></tr></thead><tbody>'+best.map((x,i)=>`<tr><td>${labels[i]}</td><td>${x[1]}</td><td>${fmt(x[0])}</td><td>${fmt(stakes[i])} ₽</td><td>${fmt(returns[i])} ₽</td></tr>`).join('')+'</tbody></table><div class="notice">Расчёт предполагает, что все ставки приняты по указанным коэффициентам. Не учитывает лимиты, налоги, комиссии, отмены и различия правил.</div>';
+}
+$('calc').onclick=calculate;
+$('clear').onclick=()=>{['event','f1','f2','f3','x1','x2','x3'].forEach(id=>$(id).value='');$('roi').textContent=$('sum').textContent=$('profit').textContent='—';$('status').textContent='Введи коэффициенты и нажми «Рассчитать вилку».';$('stakes').innerHTML='';last=null;};
+function readHistory(){try{return JSON.parse(localStorage.getItem('arb-history')||'[]')}catch{return[]}}
+function renderHistory(){const h=readHistory();$('history').innerHTML=h.length?h.map((v,i)=>`<div class="saveditem"><b>${v.event}</b> · ${v.mode.toUpperCase()} · ${v.sport}<br>ROI: <b class="${v.roi>0?'good':'bad'}">${fmt(v.roi)}%</b> · прибыль: ${fmt(v.profit)} ₽ <span style="color:var(--muted)">· ${v.date}</span></div>`).join(''):'<div class="notice">Сохранённых расчётов пока нет.</div>'}
+$('save').onclick=()=>{if(!last){alert('Сначала рассчитай вилку.');return;}const h=readHistory();h.unshift({...last,date:new Date().toLocaleString('ru-RU')});localStorage.setItem('arb-history',JSON.stringify(h.slice(0,50)));renderHistory();};
+$('wipe').onclick=()=>{localStorage.removeItem('arb-history');renderHistory();};renderHistory();
+</script>
+</body></html>
