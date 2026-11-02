@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Проверка API — Arb Scanner</title>
+<style>
+:root{color-scheme:dark}*{box-sizing:border-box}body{margin:0;background:#101827;color:#eef3fb;font:16px system-ui,-apple-system,Segoe UI,sans-serif;padding:18px}
+main{max-width:760px;margin:auto}h1{font-size:25px;margin:8px 0}p{color:#b9c5d6;line-height:1.5}.panel{background:#1b293d;border:1px solid #33465f;border-radius:14px;padding:15px;margin:14px 0}
+button{background:#55b8ff;color:#071523;border:0;border-radius:10px;padding:13px 18px;font-weight:700;font-size:16px;width:100%;cursor:pointer}
+.status{font-weight:700;margin:8px 0}.muted{color:#9fb0c5;font-size:13px}pre{white-space:pre-wrap;overflow-wrap:anywhere;max-height:360px;overflow:auto;background:#0b1220;padding:12px;border-radius:9px;font-size:12px}
+.good{color:#68e0a2}.bad{color:#ff9b9b}.warn{color:#ffd27a}a{color:#7cc9ff}
+</style>
+</head>
+<body><main>
+<h1>Проверка источника коэффициентов</h1>
+<p>Тест проверяет публичные JSON-адреса BetScoper прямо из браузера. Он ничего не отправляет букмекерам, не входит в аккаунты и не делает ставок.</p>
+<div class="panel"><div class="muted">Источник</div><b>BetScoper API · https://betscoper.ru/api/v1/</b><p class="muted">Проверяем список букмекеров и предстоящие футбольные матчи. Если браузер блокирует запрос (CORS), это будет показано отдельно от ошибки сервера.</p><button id="run">Проверить соединение</button><div id="overall" class="status">Ожидает запуска</div></div>
+<div class="panel"><h3>1. Список букмекеров</h3><div id="booksStatus" class="status">Не проверено</div><pre id="books">Нажми «Проверить соединение».</pre></div>
+<div class="panel"><h3>2. Предстоящие матчи</h3><div id="matchesStatus" class="status">Не проверено</div><pre id="matches">Нажми «Проверить соединение».</pre></div>
+<div class="panel"><h3>3. Коэффициенты первого найденного матча</h3><div id="oddsStatus" class="status">Ожидает список матчей</div><pre id="odds">Будет проверено автоматически, если API вернёт матч со slug.</pre></div>
+<div class="panel"><h3>Что означают результаты</h3><p><span class="good">Успех</span> — браузер получил JSON.</p><p><span class="warn">CORS / Failed to fetch</span> — сайт API может работать, но не разрешает запросы с GitHub Pages. Тогда понадобится серверный посредник.</p><p><span class="bad">HTTP 4xx/5xx</span> — сервер ответил ошибкой; текст ответа будет показан выше.</p><p class="muted">Источник документации: <a href="https://betscoper.ru/api-docs" target="_blank" rel="noopener">betscoper.ru/api-docs</a></p></div>
+</main>
+<script>
+const base='https://betscoper.ru/api/v1';
+const $=id=>document.getElementById(id);
+function show(id,status,text,kind){$(id+'Status').textContent=status;$(id+'Status').className='status '+(kind||'');$(id).textContent=text}
+async function get(path){
+ const controller=new AbortController();const timer=setTimeout(()=>controller.abort(),15000);
+ try{const r=await fetch(base+path,{method:'GET',headers:{'Accept':'application/json'},cache:'no-store',signal:controller.signal});
+ const raw=await r.text();let data;try{data=JSON.parse(raw)}catch{data={raw_text:raw}}
+ return {ok:r.ok,status:r.status,data};
+ }finally{clearTimeout(timer)}
+}
+$('run').addEventListener('click',async()=>{
+ $('run').disabled=true;$('run').textContent='Проверяем…';$('overall').textContent='Выполняются запросы…';
+ let bookData=null,matchData=null;
+ try{
+  const b=await get('/bookmakers');bookData=b.data;
+  show('books',b.ok?'HTTP '+b.status+' · получен ответ':'HTTP '+b.status,JSON.stringify(b.data,null,2),b.ok?'good':'bad');
+ }catch(e){show('books',e.name==='AbortError'?'Тайм-аут':'Не удалось получить ответ',String(e)+' — возможно, CORS, сеть или сервер недоступен.','warn')}
+ try{
+  const m=await get('/matches?sport=football&status=scheduled&per_page=5');matchData=m.data;
+  show('matches',m.ok?'HTTP '+m.status+' · получен ответ':'HTTP '+m.status,JSON.stringify(m.data,null,2),m.ok?'good':'bad');
+ }catch(e){show('matches',e.name==='AbortError'?'Тайм-аут':'Не удалось получить ответ',String(e)+' — возможно, CORS, сеть или сервер недоступен.','warn')}
+ const rows=matchData?.data;
+ const match=Array.isArray(rows)?rows.find(x=>x&&x.slug):null;
+ if(match){
+  try{const o=await get('/matches/'+encodeURIComponent(match.slug)+'/odds');show('odds',o.ok?'HTTP '+o.status+' · '+(match.home_team?.name_ru||'')+' — '+(match.away_team?.name_ru||''): 'HTTP '+o.status,JSON.stringify(o.data,null,2),o.ok?'good':'bad')}
+  catch(e){show('odds','Не удалось получить ответ',String(e),'warn')}
+ }else{show('odds','Не найден матч со slug','API не вернул массив data с матчами либо запрос списка завершился ошибкой.','warn')}
+ const good=['booksStatus','matchesStatus','oddsStatus'].some(id=>$ (id).classList.contains('good'));
+ $('overall').textContent=good?'Получены некоторые ответы. Изучи результаты ниже.':'Пока нет подтверждённого ответа от API. Посмотри сообщения об ошибках ниже.';
+ $('overall').className='status '+(good?'good':'warn');
+ $('run').disabled=false;$('run').textContent='Проверить ещё раз';
+});
+</script></body></html>
