@@ -96,7 +96,7 @@
       const odd=decimal(first(x,["odds","odd","coefficient","coefficient_value","value","price"]));
       if(book&&market&&outcome&&odd&&allowedPeriod){
         const id=[book,market,period,outcome,odd].join("|");
-        if(!seen.has(id)){seen.add(id);rows.push({book,market:market+"|"+period,outcome,odd,active:x.is_active!==false&&x.active!==false&&x.suspended!==true});}
+        if(!seen.has(id)){seen.add(id);rows.push({book,market:market+"|"+period,outcome,odd,active:x.is_active!==false&&x.active!==false&&x.suspended!==true&&!/suspend|closed|removed|unavailable|приостанов|закрыт/i.test(String(x.status||x.state||""))});}
       }
       for(const [k,v] of Object.entries(x)){
         if(v&&typeof v==="object") stack.push(v);
