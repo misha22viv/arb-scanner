@@ -1,20 +1,24 @@
-/* Local-only odds history and browser notifications. No server storage or betting actions. */
+/* Durable browser-side history: IndexedDB primary, localStorage cache/fallback, portable backups. */
 (function(root){
 "use strict";
-const KEY="arb-scanner-history-v1",MAX=500;
-function read(){try{const x=JSON.parse(localStorage.getItem(KEY)||"[]");return Array.isArray(x)?x:[];}catch(_){return [];}}
-function write(rows){try{localStorage.setItem(KEY,JSON.stringify(rows.slice(-MAX)));return true;}catch(_){return false;}}
+const KEY="arb-scanner-history-v2",OLD_KEY="arb-scanner-history-v1",DB="arb-scanner-store",STORE="snapshots",MAX=2000;
+let dbPromise=null,writeQueue=Promise.resolve(),mode="initializing",memory=[];
+function localRead(){try{const v=JSON.parse(localStorage.getItem(KEY)||localStorage.getItem(OLD_KEY)||"[]");return Array.isArray(v)?v:[];}catch(_){return [];}}
+function localWrite(rows){try{localStorage.setItem(KEY,JSON.stringify(rows.slice(-MAX)));return true;}catch(_){return false;}}
+function openDb(){if(!("indexedDB" in root))return Promise.reject(new Error("IndexedDB unavailable"));if(dbPromise)return dbPromise;dbPromise=new Promise((resolve,reject)=>{const req=indexedDB.open(DB,1);req.onupgradeneeded=()=>{const d=req.result;if(!d.objectStoreNames.contains(STORE))d.createObjectStore(STORE,{keyPath:"id"});};req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error||new Error("IndexedDB open failed"));req.onblocked=()=>reject(new Error("IndexedDB blocked"));});return dbPromise;}
+function dbAll(){return openDb().then(db=>new Promise((resolve,reject)=>{const req=db.transaction(STORE,"readonly").objectStore(STORE).getAll();req.onsuccess=()=>resolve(Array.isArray(req.result)?req.result:[]);req.onerror=()=>reject(req.error);}));}
+function dbPut(row){return openDb().then(db=>new Promise((resolve,reject)=>{const tx=db.transaction(STORE,"readwrite");tx.objectStore(STORE).put(row);tx.oncomplete=()=>resolve(true);tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error||new Error("IndexedDB write aborted"));}));}
+function dbReplace(rows){return openDb().then(db=>new Promise((resolve,reject)=>{const tx=db.transaction(STORE,"readwrite"),store=tx.objectStore(STORE);store.clear();for(const row of rows.slice(-MAX))store.put(row);tx.oncomplete=()=>resolve(true);tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error||new Error("IndexedDB restore aborted"));}));}
+function merge(a,b){const m=new Map();for(const x of [...a,...b])if(x&&x.id)m.set(String(x.id),x);return [...m.values()].sort((x,y)=>String(x.at||"").localeCompare(String(y.at||""))).slice(-MAX);}
+const ready=(async()=>{memory=localRead();try{const durable=await dbAll();memory=merge(memory,durable);await dbReplace(memory);mode="IndexedDB + local cache";}catch(_){mode="localStorage fallback";}localWrite(memory);return {count:memory.length,mode};})();
 function fingerprint(x){return [x.eventKey,x.market,x.outcome,x.book].join("|");}
-function record(snapshot){
- const rows=read(),prior=rows.slice().reverse().find(x=>x.eventKey===snapshot.eventKey)||null,changes=[];
- const previous=new Map((prior?.quotes||[]).map(q=>[fingerprint(q),q]));
- for(const q of snapshot.quotes||[]){const old=previous.get(fingerprint(q));if(!old)changes.push({type:"new",quote:q});else if(old.odd!==q.odd)changes.push({type:"changed",before:old.odd,quote:q});}
- const item={id:Date.now()+"-"+Math.random().toString(36).slice(2,7),at:new Date().toISOString(),eventKey:snapshot.eventKey||"unknown",quotes:snapshot.quotes||[],changes};
- rows.push(item);const saved=write(rows);return {item,changes,saved,count:Math.min(rows.length,MAX)};
-}
-function list(limit=100){return read().slice(-limit).reverse();}
-function clear(){try{localStorage.removeItem(KEY);return true;}catch(_){return false;}}
+function record(snapshot){const prior=memory.slice().reverse().find(x=>x.eventKey===snapshot.eventKey)||null,changes=[];const previous=new Map((prior?.quotes||[]).map(q=>[fingerprint(q),q]));for(const q of snapshot.quotes||[]){const old=previous.get(fingerprint(q));if(!old)changes.push({type:"new",quote:q});else if(old.odd!==q.odd)changes.push({type:"changed",before:old.odd,quote:q});}const item={id:Date.now()+"-"+Math.random().toString(36).slice(2,9),at:new Date().toISOString(),eventKey:snapshot.eventKey||"unknown",quotes:Array.isArray(snapshot.quotes)?snapshot.quotes:[],changes};memory=merge(memory,[item]);const cached=localWrite(memory);writeQueue=writeQueue.then(()=>dbPut(item)).then(()=>{mode="IndexedDB + local cache";}).catch(()=>{if(!cached)mode="memory only — export backup";});return {item,changes,saved:cached||mode.indexOf("IndexedDB")===0,count:memory.length};}
+function list(limit=100){return memory.slice(-Math.max(0,Number(limit)||100)).reverse();}
+function clear(){memory=[];const cached=localWrite(memory);writeQueue=writeQueue.then(()=>dbReplace([])).catch(()=>{});try{localStorage.removeItem(OLD_KEY);}catch(_){}return cached||true;}
+function exportBackup(){return JSON.stringify({format:"arb-scanner-history",version:2,exportedAt:new Date().toISOString(),records:memory},null,2);}
+async function restoreBackup(raw){let data;try{data=typeof raw==="string"?JSON.parse(raw):raw;}catch(_){throw new Error("Файл резервной копии не является корректным JSON.");}if(!data||data.format!=="arb-scanner-history"||!Array.isArray(data.records))throw new Error("Неверный формат резервной копии.");const valid=data.records.filter(x=>x&&typeof x.id==="string"&&typeof x.at==="string"&&typeof x.eventKey==="string"&&Array.isArray(x.quotes));memory=merge(memory,valid);localWrite(memory);try{await dbReplace(memory);mode="IndexedDB + local cache";}catch(_){mode="localStorage fallback";}return {count:memory.length,imported:valid.length,mode};}
+function storageStatus(){return mode;}
 async function enableNotifications(){if(!("Notification" in root))return "unsupported";if(Notification.permission==="granted")return "granted";if(Notification.permission==="denied")return "denied";return await Notification.requestPermission();}
 function notify(title,body){if("Notification" in root&&Notification.permission==="granted"&&!document.hidden)new Notification(title,{body});}
-root.ArbHistory={record,list,clear,enableNotifications,notify};
+root.ArbHistory={ready,record,list,clear,exportBackup,restoreBackup,storageStatus,enableNotifications,notify};
 })(typeof window!=="undefined"?window:globalThis);
