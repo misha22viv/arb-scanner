@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#0b1220">
+<title>ARB Scanner — Fonbet × Winline</title>
+<style>
+:root{color-scheme:dark;--bg:#09111e;--panel:#121e30;--panel2:#192941;--line:#2a3b54;--txt:#edf4ff;--muted:#9aabc0;--blue:#79b8ff;--green:#48d6a0;--red:#ff7885;--amber:#ffd27a}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--txt);font:15px/1.5 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+header{padding:20px 16px 16px;background:linear-gradient(130deg,#183453,#0b1422 70%);border-bottom:1px solid var(--line)}
+.wrap{max-width:1050px;margin:auto;padding:0 14px}h1{font-size:24px;margin:0}h2{font-size:17px;margin:0 0 12px}h3{font-size:14px;margin:0 0 8px}.sub,.muted,.hint{color:var(--muted);font-size:12px}.statusline{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:10px}
+.pill{border:1px solid var(--line);border-radius:99px;padding:3px 9px;font-size:11px;color:var(--muted)}.pill.good{color:var(--green);border-color:#286b58}.pill.warn{color:var(--amber);border-color:#78602e}
+main{padding:16px 0 40px}.tabs{display:flex;gap:8px;overflow:auto;margin-bottom:14px}.tab,button{border:1px solid var(--line);background:var(--panel2);color:var(--txt);border-radius:10px;padding:10px 13px;font-weight:650;cursor:pointer}.tab.active{background:#244c76;border-color:#548cc7}button.primary{background:#2768ad;border-color:#397fca}button:disabled{opacity:.5;cursor:wait}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:15px;padding:15px;margin:12px 0}.row{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+label{display:block;color:var(--muted);font-size:12px;margin-bottom:5px}input,select{width:100%;min-width:0;background:#0b1728;border:1px solid var(--line);color:var(--txt);padding:11px;border-radius:9px;font-size:15px}
+.metricgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}.metric{background:#0b1728;border:1px solid var(--line);padding:11px;border-radius:10px;min-width:0}.metric small{display:block;color:var(--muted);font-size:11px}.metric strong{display:block;font-size:19px;margin-top:3px;overflow-wrap:anywhere}
+.good{color:var(--green)}.bad{color:var(--red)}.warn{color:var(--amber)}.hidden{display:none!important}
+.list{display:grid;gap:9px}.match{border:1px solid var(--line);border-radius:11px;padding:12px;background:#0d192a}.matchhead{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}.matchname{font-weight:700}.tag{font-size:11px;color:var(--muted)}pre{white-space:pre-wrap;overflow-wrap:anywhere;max-height:300px;overflow:auto;background:#091321;border:1px solid var(--line);border-radius:9px;padding:10px;font-size:11px;color:#c9d9ee}
+table{width:100%;border-collapse:collapse;font-size:13px;margin-top:10px}td,th{text-align:left;padding:8px 6px;border-bottom:1px solid var(--line)}th{color:var(--muted);font-weight:500}
+.actions{display:flex;gap:8px;flex-wrap:wrap}.actions button{flex:1}.note{font-size:12px;color:var(--muted);margin-top:10px}.sectiongap{margin-top:16px}
+@media(max-width:650px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.metricgrid{grid-template-columns:repeat(2,1fr)}.wrap{padding:0 11px}.card{padding:13px}h1{font-size:21px}}
+</style>
+</head>
+<body>
+<header><div class="wrap"><h1>⚡ ARB Scanner</h1><div class="sub">Личный сканер · прямые источники в разработке · BetScoper — резерв</div><div class="statusline"><span class="pill">PREMATCH · read-only</span><span id="sourceBadge" class="pill warn">Источник ещё не проверен</span><span class="pill">Без аккаунтов и автоматических ставок</span></div></div></header>
+<main class="wrap">
+<div class="tabs"><button class="tab active" data-tab="scan">Автосканер</button><button class="tab" data-tab="calc">Калькулятор</button><button class="tab" data-tab="about">Диагностика</button></div>
+
+<section id="scan">
+ <div class="card">
+  <div class="row"><div><h2>Поиск матчей и вилок</h2><div class="muted">Сканер получает публичные данные через сервер, проверяет свежесть и ищет подходящие рынки.</div></div><button class="primary" id="scanBtn">Обновить данные</button></div>
+  <div class="grid sectiongap">
+   <div><label>Вид спорта</label><select id="sport"><option value="football">Футбол</option><option value="hockey">Хоккей</option><option value="basketball">Баскетбол</option><option value="tennis">Теннис</option><option value="">Все доступные</option></select></div>
+   <div><label>Минимальный ROI (%)</label><input id="minRoi" type="number" min="0" step=".1" value="1"></div>
+   <div><label>Максимум матчей</label><select id="maxMatches"><option>10</option><option selected>20</option><option>40</option></select></div>
+  </div>
+  <div class="metricgrid sectiongap">
+   <div class="metric"><small>Матчей получено</small><strong id="mCount">—</strong></div>
+   <div class="metric"><small>Матчей с данными о кэфах</small><strong id="oCount">—</strong></div>
+   <div class="metric"><small>Вилок подтверждено</small><strong id="aCount">—</strong></div>
+   <div class="metric"><small>Обновлено</small><strong id="updated">—</strong></div>
+  </div>
+  <div class="note" id="scanStatus">Нажми «Обновить данные». Первый запуск проверит API и структуру ответов.</div>
+ </div>
+ <div class="card"><div class="row"><h2>Матчи</h2><span id="matchHint" class="muted">Пока нет загруженных данных</span></div><div id="matches" class="list"><div class="muted">Матчи появятся после проверки источника.</div></div></div>
+ <div class="card"><h2>Вилки</h2><div id="arbs" class="muted">Пока нет подтверждённых вилок. Непонятная структура коэффициентов не будет интерпретироваться наугад.</div></div>
+ <div class="card"><div class="row"><h2>История коэффициентов</h2><div class="actions"><button id="notifyBtn">Включить уведомления</button><button id="clearHistoryBtn">Очистить</button></div></div><div class="muted">История хранится только в этом браузере на этом устройстве. Записи пока будут поступать только из проверенных ответов резервного источника.</div><div id="historyList" class="list sectiongap">История пока пуста.</div></div>
+</section>
+
+<section id="calc" class="hidden">
+ <div class="card">
+  <h2>Ручной калькулятор вилки</h2><div class="muted">Сравнивай одинаковые рынки и периоды матча. Распределение ставок рассчитывается по лучшему коэффициенту каждого исхода.</div>
+  <div class="grid sectiongap">
+   <div><label>Матч</label><input id="event" placeholder="Команда А — Команда Б"></div>
+   <div><label>Общий банк (₽)</label><input id="bank" type="number" min="1" value="10000"></div>
+   <div><label>Рынок</label><select id="market"><option value="2">Два исхода</option><option value="3">1X2</option></select></div>
+  </div>
+  <div class="grid sectiongap">
+   <div><h3>Fonbet</h3><label>П1 / Исход 1</label><input id="f1" type="number" min="1.01" step=".01" placeholder="2.10"><label id="fXLabel">П2 / Исход 2</label><input id="f2" type="number" min="1.01" step=".01" placeholder="2.10"><div id="fDraw" class="hidden"><label>Ничья</label><input id="f3" type="number" min="1.01" step=".01" placeholder="3.30"></div></div>
+   <div><h3>Winline</h3><label>П1 / Исход 1</label><input id="w1" type="number" min="1.01" step=".01" placeholder="2.10"><label>П2 / Исход 2</label><input id="w2" type="number" min="1.01" step=".01" placeholder="2.10"><div id="wDraw" class="hidden"><label>Ничья</label><input id="w3" type="number" min="1.01" step=".01" placeholder="3.30"></div></div>
+   <div><h3>Параметры</h3><label>Мин. ROI для подсветки</label><input id="calcMinRoi" type="number" value="1" step=".1"><button class="primary sectiongap" id="calcBtn">Рассчитать</button></div>
+  </div>
+  <div id="calcResult" class="sectiongap muted">Введи коэффициенты и нажми «Рассчитать».</div>
+ </div>
+</section>
+
+<section id="about" class="hidden">
+ <div class="card"><h2>Состояние источника</h2><div id="diagStatus" class="muted">Проверка ещё не запускалась.</div><div class="actions sectiongap"><button id="healthBtn">Проверить сервер</button><button id="booksBtn">Список букмекеров</button><button id="rawBtn">Последний ответ API</button></div><pre id="raw" class="sectiongap">Здесь появится технический ответ источника.</pre></div>
+ <div class="card"><h2>Правила надёжности</h2><ul class="muted"><li>Не показывать вилку, если не подтверждены все исходы одного и того же рынка.</li><li>Не смешивать prematch и live, разные периоды или несовместимые правила расчёта.</li><li>Показывать время обновления и предупреждать об устаревших данных.</li><li>Не подменять отсутствующие коэффициенты выдуманными значениями.</li><li>Сканер только читает общедоступные данные; он не входит в аккаунты и не размещает ставки.</li></ul></div>
+</section>
+<footer class="note">Личный аналитический инструмент. Коэффициенты могут измениться до принятия ставки; расчёт не гарантирует прибыль. Данные источника могут быть неполными или задержанными.</footer>
+</main>
+<script src="/arb-engine.js"></script>\n<script src="/arb-core.js"></script>\n<script src="/providers/fonbet.js"></script>\n<script src="/providers/winline.js"></script>\n<script src="/arb-history.js"></script>
+<script>
+const $=id=>document.getElementById(id);let lastRaw=null,lastMatches=[],lastOdds=[],lastScanAt=null;
+function renderHistory(){if(!window.ArbHistory)return;const rows=ArbHistory.list(30);$('historyList').innerHTML=rows.length?rows.map(x=>'<div class="match"><div class="matchhead"><b>'+esc(x.eventKey)+'</b><span class="tag">'+new Date(x.at).toLocaleString('ru-RU')+'</span></div><div class="tag">Коэффициентов: '+x.quotes.length+' · изменений: '+x.changes.length+'</div>'+(x.changes.length?'<div class="note">'+x.changes.slice(0,4).map(c=>c.type==='changed'?esc(c.quote.book)+' '+esc(c.quote.outcome)+': '+fmt(c.before)+' → '+fmt(c.quote.odd):'Новый коэффициент '+esc(c.quote.book)+' '+esc(c.quote.outcome)+' @ '+fmt(c.quote.odd)).join('<br>')+'</div>':'')+'</div>').join(''):'История пока пуста.';}
+function analyzeOdds(payload,minRoi){const parsed=window.ArbEngine.findArbitrage(payload,minRoi);if(!window.ArbCore)return parsed;const rows=parsed.rows.map(r=>({book:r.book,market:(r.market||'').startsWith('FT_1X2')?'1x2|full time||regulation':(r.market||'').startsWith('TWO_WAY')?'two way|full time||regulation':r.market,outcome:({HOME:'home',DRAW:'draw',AWAY:'away'})[r.outcome]||r.outcome.toLowerCase(),odd:r.odd,active:r.active}));const arbitrage=ArbCore.findCrossBookArbitrage(rows,minRoi,10000).map(a=>({market:a.market,roi:a.roi,legs:a.legs,inverse:a.inverseSum,profit:a.profit}));return {...parsed,arbitrage};}
+function saveHistory(match,parsed){if(!window.ArbHistory||!parsed?.rows?.length)return;const e=window.ArbCore.normalizeEvent(match,'BetScoper-fallback');const quotes=parsed.rows.map(r=>({eventKey:[e.sport,e.league,e.home,e.away,e.startTime].join('|'),market:r.market,outcome:r.outcome,book:r.book,odd:r.odd}));const result=ArbHistory.record({eventKey:[e.sport,e.league,e.home,e.away,e.startTime].join('|'),quotes});if(result.changes.some(c=>c.type==='changed'))ArbHistory.notify('Изменились коэффициенты',matchName(match));renderHistory();}
+function matchName(x){return x?.name||x?.title||x?.event_name||x?.match_name||'Матч';}
+
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmt=(n,d=2)=>Number(n).toLocaleString('ru-RU',{minimumFractionDigits:d,maximumFractionDigits:d});
+async function api(path){const ctl=new AbortController(),timer=setTimeout(()=>ctl.abort(),18000);try{const r=await fetch('/api/betscoper?'+path,{headers:{Accept:'application/json'},cache:'no-store',signal:ctl.signal});const text=await r.text();let data;try{data=JSON.parse(text)}catch{data={raw:text}};return {ok:r.ok,status:r.status,data,receivedAt:r.headers.get('X-Data-Received-At')};}finally{clearTimeout(timer)}}
+function rowsOf(data){if(Array.isArray(data))return data;if(Array.isArray(data?.data))return data.data;if(Array.isArray(data?.matches))return data.matches;if(Array.isArray(data?.items))return data.items;return []}
+function getName(x){return x?.name||x?.title||x?.event_name||x?.match_name||x?.name_ru||x?.slug||'Событие без названия'}
+function sportName(x){return x?.sport?.name||x?.sport_name||x?.sport||'Спорт не указан'}
+function matchTime(x){const v=x?.start_time||x?.start_at||x?.scheduled_at||x?.date||x?.timestamp; if(!v)return 'Время не указано';const d=typeof v==='number'?new Date(v<1e12?v*1000:v):new Date(v);return isNaN(d)?String(v):d.toLocaleString('ru-RU',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}
+function bookmakerNames(data){const r=rowsOf(data);return r.map(x=>getName(x)).filter(Boolean)}
+async function scan(){
+ $('scanBtn').disabled=true;$('scanBtn').textContent='Загружаю…';$('scanStatus').textContent='Проверяю букмекеров и список событий…';$('matches').innerHTML='';$('arbs').textContent='Проверяю структуру коэффициентов…';
+ try{
+  const [b,m]=await Promise.all([api('resource=bookmakers'),api('resource=matches&status=scheduled&per_page='+encodeURIComponent($('maxMatches').value)+( $('sport').value?'&sport='+encodeURIComponent($('sport').value):''))]);
+  lastRaw={bookmakers:b,matches:m};const books=rowsOf(b.data),rawMatches=rowsOf(m.data),matches=[];for(const candidate of rawMatches){if(!matches.some(existing=>{const a=ArbCore.normalizeEvent(candidate,'BetScoper-fallback'),b=ArbCore.normalizeEvent(existing,'BetScoper-fallback');return ArbCore.matchEvents(a,b).matched;}))matches.push(candidate);if(matches.length>=Number($('maxMatches').value))break;}lastMatches=matches;
+  const names=bookmakerNames(b.data);const fb=names.filter(n=>/fonbet|фонбет/i.test(n)),wl=names.filter(n=>/winline|винлайн/i.test(n));
+  $('sourceBadge').textContent=b.ok&&m.ok?'Резервный источник отвечает':'Проблема источника';$('sourceBadge').className='pill '+(b.ok&&m.ok?'good':'warn');
+  $('mCount').textContent=matches.length;$('oCount').textContent='—';$('aCount').textContent='0';$('updated').textContent=new Date().toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'});lastScanAt=Date.now();
+  $('scanStatus').innerHTML='РЕЗЕРВ BetScoper · букмекеров в ответе: '+books.length+'. Fonbet: '+fb.length+'; Winline: '+wl.length+'. Статус матчей: HTTP '+m.status+'. Наличие в каталоге ещё не подтверждает наличие коэффициентов. Прямые адаптеры Fonbet/Winline пока ожидают разрешённый поток данных.';
+  $('diagStatus').textContent='РЕЗЕРВ BetScoper: bookmakers HTTP '+b.status+'; matches HTTP '+m.status+'. Найдены в каталоге: Fonbet '+fb.length+', Winline '+wl.length+'. Это не проверка фактического покрытия odds.';
+  $('raw').textContent=JSON.stringify(lastRaw,null,2).slice(0,24000);
+  $('matches').innerHTML=matches.length?matches.map((x,i)=>'<article class="match"><div class="matchhead"><div><div class="matchname">'+esc(getName(x))+'</div><div class="tag">'+esc(sportName(x))+' · '+esc(matchTime(x))+'</div></div><button data-odds="'+i+'">Проверить коэффициенты</button></div><div class="muted sectiongap" id="odds-'+i+'">Коэффициенты ещё не запрашивались.</div></article>').join(''):'<div class="warn">API не вернул список матчей в ожидаемом формате. Смотри сырой ответ в разделе «Диагностика».</div>';
+  $('matchHint').textContent=matches.length+' событий';$('arbs').innerHTML='<div class="warn">Ожидаю проверку реального ответа odds. Вилки будут считаться только при явном распознавании БК, рынка, исхода и коэффициента.</div>';
+  // Inspect a bounded sample of match-odds payloads from the fallback provider.
+  for(let i=0;i<Math.min(5,matches.length);i++){
+   const match=matches[i];if(!match?.slug)continue;
+   try{
+    const q=await api('resource=odds&slug='+encodeURIComponent(match.slug));lastOdds[i]=q;
+    const parsed=analyzeOdds(q.data,Number($('minRoi').value||0));saveHistory(match,parsed);
+    $('oCount').textContent=lastOdds.filter(Boolean).length;
+    const books=[...new Set(parsed.rows.map(x=>x.book))];
+    const stamp=q.data?.updated_at||q.data?.data?.updated_at||q.data?.meta?.updated_at||null;
+    const fresh=window.ArbEngine.freshness(stamp);
+    const state=fresh.state==='unknown'?'время источника не указано':fresh.ageMinutes+' мин · '+fresh.state;
+    const target=document.querySelector('[data-odds="'+i+'"]');
+    if(target)target.insertAdjacentHTML('afterend','<div class="tag">Резерв BetScoper · распознаны БК: '+esc(books.join(', ')||'нет')+' · '+esc(state)+'</div>');
+    if(parsed.arbitrage.length){
+     $('arbs').innerHTML=parsed.arbitrage.map(a=>'<div class="match"><b>'+esc(getName(match))+' · '+esc(a.market)+'</b> · ROI '+fmt(a.roi)+'%<br>'+a.legs.map(x=>esc(x.book)+' '+esc(x.outcome)+' @ '+fmt(x.odd)).join(' · ')+'</div>').join('');
+     $('aCount').textContent=parsed.arbitrage.length;
+    }
+   }catch(e){/* Keep scanning other matches; raw payload remains available on manual inspection. */}
+  }
+ }catch(e){$('scanStatus').textContent='Ошибка: '+e;$('sourceBadge').textContent='Нет ответа';$('sourceBadge').className='pill warn';}
+ finally{$('scanBtn').disabled=false;$('scanBtn').textContent='Обновить данные';}
+}
+$('scanBtn').onclick=scan;
+$('matches').addEventListener('click',async e=>{const btn=e.target.closest('[data-odds]');if(!btn)return;const i=Number(btn.dataset.odds),match=lastMatches[i];if(!match?.slug){$('odds-'+i).textContent='У этого события нет slug — нельзя безопасно запросить его коэффициенты.';return;}btn.disabled=true;try{const r=await api('resource=odds&slug='+encodeURIComponent(match.slug));lastOdds[i]=r;lastRaw={...lastRaw,selectedMatch:getName(match),odds:r};$('odds-'+i).innerHTML='Ответ HTTP '+r.status+' · <button class="secondary" data-showraw="'+i+'">Показать JSON</button>';$('raw').textContent=JSON.stringify(r.data,null,2).slice(0,24000);$('oCount').textContent=lastOdds.filter(Boolean).length;$('diagStatus').textContent='Последний запрос коэффициентов: HTTP '+r.status+' для '+getName(match);const parsed=analyzeOdds(r.data,Number($('minRoi').value||0));saveHistory(match,parsed);const rows=parsed.rows;$('oCount').textContent=lastOdds.filter(Boolean).length;const stamp=r.data?.updated_at||r.data?.data?.updated_at||r.data?.meta?.updated_at||null;const fresh=window.ArbEngine.freshness(stamp);const freshnessText=fresh.state==='unknown'?'Время обновления поставщика не найдено':('Данные: '+fresh.ageMinutes+' мин. назад · '+fresh.state);$('odds-'+i).innerHTML='HTTP '+r.status+' · '+rows.length+' распознанных строк · '+esc(freshnessText)+' · <button data-showraw="'+i+'">JSON</button>';if(parsed.arbitrage.length){$('arbs').innerHTML=parsed.arbitrage.map(a=>'<div class="match"><b>'+esc(a.market)+'</b> · ROI '+fmt(a.roi)+'%<br>'+a.legs.map(x=>esc(x.book)+' '+esc(x.outcome)+' @ '+fmt(x.odd)).join(' · ')+'</div>').join('');$('aCount').textContent=parsed.arbitrage.length;}else if(rows.length){$('arbs').textContent='Коэффициенты распознаны, но вилок с заданным ROI нет.';}else{$('arbs').innerHTML='<div class="warn">Ответ получен, но его формат пока не распознан как строки Fonbet/Winline с рынком, исходом и десятичным коэффициентом. Сохранил JSON для точной адаптации парсера.</div>';}}catch(err){$('odds-'+i).textContent='Ошибка запроса: '+err;}finally{btn.disabled=false;}});
+$('matches').addEventListener('click',e=>{const b=e.target.closest('[data-showraw]');if(b){document.querySelector('[data-tab="about"]').click();}});
+$('healthBtn').onclick=async()=>{try{const r=await fetch('/api/health',{cache:'no-store'});const d=await r.json();$('diagStatus').textContent='Сервер: HTTP '+r.status+' · '+JSON.stringify(d);$('raw').textContent=JSON.stringify(d,null,2)}catch(e){$('diagStatus').textContent='Ошибка сервера: '+e}};
+$('booksBtn').onclick=async()=>{try{const r=await api('resource=bookmakers');lastRaw=r;$('raw').textContent=JSON.stringify(r.data,null,2).slice(0,24000);$('diagStatus').textContent='Список букмекеров: HTTP '+r.status+'; записей '+rowsOf(r.data).length}catch(e){$('diagStatus').textContent=String(e)}};
+$('rawBtn').onclick=()=>{$('raw').textContent=JSON.stringify(lastRaw,null,2)||'Нет ответа API'};
+document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('active',x===b));['scan','calc','about'].forEach(id=>$(id).classList.toggle('hidden',id!==b.dataset.tab));});
+$('market').onchange=()=>{const t=$('market').value==='3';$('fDraw').classList.toggle('hidden',!t);$('wDraw').classList.toggle('hidden',!t)};
+setInterval(()=>{if(!document.hidden&&!$('scanBtn').disabled)scan();},300000);
+$('notifyBtn').onclick=async()=>{const result=await ArbHistory.enableNotifications();$('notifyBtn').textContent=result==='granted'?'Уведомления включены':result==='denied'?'Уведомления запрещены':'Недоступно';};
+$('clearHistoryBtn').onclick=()=>{if(ArbHistory.clear())renderHistory();};
+renderHistory();
+$('calcBtn').onclick=()=>{
+ const three=$('market').value==='3',bank=Number($('bank').value),ids=three?['f1','f3','f2','w1','w3','w2']:['f1','f2','w1','w2'],vals=ids.map(id=>Number($(id).value));
+ if(!Number.isFinite(bank)||bank<=0||vals.some(v=>!Number.isFinite(v)||v<=1)){ $('calcResult').innerHTML='<span class="bad">Заполни банк и все коэффициенты значениями больше 1.</span>';return;}
+ const labels=three?['П1','Ничья','П2']:['Исход 1','Исход 2'],f=three?[vals[0],vals[1],vals[2]]:[vals[0],vals[1]],w=three?[vals[3],vals[4],vals[5]]:[vals[2],vals[3]],best=labels.map((l,i)=>f[i]>=w[i]?{label:l,book:'Fonbet',odd:f[i]}:{label:l,book:'Winline',odd:w[i]});
+ const inv=best.reduce((s,x)=>s+1/x.odd,0),roi=(1/inv-1)*100,stakes=best.map(x=>bank*(1/x.odd)/inv),profit=bank/inv-bank;
+ $('calcResult').innerHTML='<div class="metricgrid"><div class="metric"><small>ROI</small><strong class="'+(roi>0?'good':'bad')+'">'+fmt(roi)+'%</strong></div><div class="metric"><small>Σ обратных кэфов</small><strong>'+fmt(inv,4)+'</strong></div><div class="metric"><small>Равная выплата</small><strong>'+fmt(bank+profit)+' ₽</strong></div><div class="metric"><small>Прибыль</small><strong class="'+(profit>0?'good':'bad')+'">'+fmt(profit)+' ₽</strong></div></div><table><thead><tr><th>Исход</th><th>БК</th><th>Кэф</th><th>Ставка</th></tr></thead><tbody>'+best.map((x,i)=>'<tr><td>'+x.label+'</td><td>'+x.book+'</td><td>'+fmt(x.odd)+'</td><td>'+fmt(stakes[i])+' ₽</td></tr>').join('')+'</tbody></table><div class="note">'+(roi>Number($('calcMinRoi').value||0)?'Положительный ROI по введённым данным.':'Арбитража с заданным минимальным ROI нет.')+' Расчёт не учитывает лимиты, налоги, комиссии, отмены и несовпадение правил расчёта.</div>';
+};
+</script>
+</body></html>
