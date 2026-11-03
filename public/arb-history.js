@@ -6,7 +6,7 @@ function read(){try{const x=JSON.parse(localStorage.getItem(KEY)||"[]");return A
 function write(rows){try{localStorage.setItem(KEY,JSON.stringify(rows.slice(-MAX)));return true;}catch(_){return false;}}
 function fingerprint(x){return [x.eventKey,x.market,x.outcome,x.book,x.odd].join("|");}
 function record(snapshot){
- const rows=read(),prior=rows.length?rows[rows.length-1]:null,changes=[];
+ const rows=read(),prior=rows.slice().reverse().find(x=>x.eventKey===snapshot.eventKey)||null,changes=[];
  const previous=new Map((prior?.quotes||[]).map(q=>[fingerprint(q),q]));
  for(const q of snapshot.quotes||[]){const old=previous.get(fingerprint(q));if(!old)changes.push({type:"new",quote:q});else if(old.odd!==q.odd)changes.push({type:"changed",before:old.odd,quote:q});}
  const item={id:Date.now()+"-"+Math.random().toString(36).slice(2,7),at:new Date().toISOString(),eventKey:snapshot.eventKey||"unknown",quotes:snapshot.quotes||[],changes};
