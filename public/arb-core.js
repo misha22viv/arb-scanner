@@ -15,8 +15,8 @@ function normalizeEvent(x,provider="unknown"){
  const home=first(x,["home","home_team_name","homeTeam","team1","participant1"])??first(x?.home_team||{},["name_ru","name","title"]);
  const away=first(x,["away","away_team_name","awayTeam","team2","participant2"])??first(x?.away_team||{},["name_ru","name","title"]);
  const start=first(x,["startTime","start_time","start_at","scheduled_at","date"]);
- const sport=first(x,["sport_id","sport_name","sport"])??first(x?.sport||{},["name","slug","id"]);
- const league=first(x,["league_id","league_name","competition","tournament"])??first(x?.league||{},["name","title","id"]);
+ const sport=first(x,["sport_name","sport","sport_id"])??first(x?.sport||{},["name","slug","id"]);
+ const league=first(x,["league_name","competition","tournament","league_id"])??first(x?.league||{},["name","title","id"]);
  return {schema:VERSION,provider:String(provider),sourceEventId:String(first(x,["id","event_id","match_id","slug"])??""),sport:cleanName(typeof sport==="object"?sport.name:sport),league:cleanName(typeof league==="object"?league.name:league),home:cleanName(home),away:cleanName(away),startTime:ms(start),status:String(first(x,["status","event_status"])??"unknown").toLowerCase(),raw:x};
 }
 function matchEvents(a,b,opts={}){
