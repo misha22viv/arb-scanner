@@ -12,12 +12,22 @@
     ["реал мадрид","real madrid"],["барселона","barcelona"],["спартак москва","spartak moscow"],
     ["цска москва","cska moscow"],["зенит санкт-петербург","zenit"]
   ]);
+  const CYR = {"а":"a","б":"b","в":"v","г":"g","д":"d","е":"e","ж":"zh","з":"z","и":"i","й":"i","к":"k","л":"l","м":"m","н":"n","о":"o","п":"p","р":"r","с":"s","т":"t","у":"u","ф":"f","х":"kh","ц":"ts","ч":"ch","ш":"sh","щ":"shch","ъ":"","ы":"y","ь":"","э":"e","ю":"yu","я":"ya"};
+  function translit(value) { return Array.from(value).map(c=>CYR[c]??c).join(""); }
+  function editSimilarity(a,b) {
+    if(a===b)return 1;if(!a||!b)return 0;
+    const aa=a.split(" "),bb=b.split(" ");
+    const sim=(x,y)=>{let prev=Array.from({length:y.length+1},(_,i)=>i);for(let i=1;i<=x.length;i++){const cur=[i];for(let j=1;j<=y.length;j++)cur[j]=Math.min(cur[j-1]+1,prev[j]+1,prev[j-1]+(x[i-1]===y[j-1]?0:1));prev=cur;}return 1-prev[y.length]/Math.max(x.length,y.length,1);};
+    let sum=0;const used=new Set();
+    for(const x of aa){let best=0,idx=-1;for(let j=0;j<bb.length;j++)if(!used.has(j)){const score=sim(x,bb[j]);if(score>best){best=score;idx=j;}}if(idx>=0){used.add(idx);sum+=best;}}
+    return sum/Math.max(aa.length,bb.length,1);
+  }
   function cleanName(value) {
     let s = String(value || "").normalize("NFKD").toLowerCase()
       .replace(/[ё]/g,"е").replace(/\b(fc|fk|sc|club)\b/gi," ")
       .replace(/[^\p{L}\p{N}]+/gu," ").trim().replace(/\s+/g," ");
     s = ALIASES.get(s) || s;
-    return s.split(" ").filter(x => x && !STOP.has(x)).sort().join(" ");
+    return translit(s).split(" ").filter(x => x && !STOP.has(x)).sort().join(" ");
   }
   function eventParts(x) {
     const home = x?.home_team?.name_ru || x?.home_team?.name || x?.home || x?.team1 || x?.participant1;
