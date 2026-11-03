@@ -93,6 +93,25 @@ async function scan(){
   $('raw').textContent=JSON.stringify(lastRaw,null,2).slice(0,24000);
   $('matches').innerHTML=matches.length?matches.map((x,i)=>'<article class="match"><div class="matchhead"><div><div class="matchname">'+esc(getName(x))+'</div><div class="tag">'+esc(sportName(x))+' · '+esc(matchTime(x))+'</div></div><button data-odds="'+i+'">Проверить коэффициенты</button></div><div class="muted sectiongap" id="odds-'+i+'">Коэффициенты ещё не запрашивались.</div></article>').join(''):'<div class="warn">API не вернул список матчей в ожидаемом формате. Смотри сырой ответ в разделе «Диагностика».</div>';
   $('matchHint').textContent=matches.length+' событий';$('arbs').innerHTML='<div class="warn">Ожидаю проверку реального ответа odds. Вилки будут считаться только при явном распознавании БК, рынка, исхода и коэффициента.</div>';
+  // Inspect a bounded sample of match-odds payloads from the fallback provider.
+  for(let i=0;i<Math.min(5,matches.length);i++){
+   const match=matches[i];if(!match?.slug)continue;
+   try{
+    const q=await api('resource=odds&slug='+encodeURIComponent(match.slug));lastOdds[i]=q;
+    const parsed=window.ArbEngine.findArbitrage(q.data,Number($('minRoi').value||0));
+    $('oCount').textContent=lastOdds.filter(Boolean).length;
+    const books=[...new Set(parsed.rows.map(x=>x.book))];
+    const stamp=q.data?.updated_at||q.data?.data?.updated_at||q.data?.meta?.updated_at||null;
+    const fresh=window.ArbEngine.freshness(stamp);
+    const state=fresh.state==='unknown'?'время источника не указано':fresh.ageMinutes+' мин · '+fresh.state;
+    const target=document.querySelector('[data-odds="'+i+'"]');
+    if(target)target.insertAdjacentHTML('afterend','<div class="tag">Резерв BetScoper · распознаны БК: '+esc(books.join(', ')||'нет')+' · '+esc(state)+'</div>');
+    if(parsed.arbitrage.length){
+     $('arbs').innerHTML=parsed.arbitrage.map(a=>'<div class="match"><b>'+esc(getName(match))+' · '+esc(a.market)+'</b> · ROI '+fmt(a.roi)+'%<br>'+a.legs.map(x=>esc(x.book)+' '+esc(x.outcome)+' @ '+fmt(x.odd)).join(' · ')+'</div>').join('');
+     $('aCount').textContent=parsed.arbitrage.length;
+    }
+   }catch(e){/* Keep scanning other matches; raw payload remains available on manual inspection. */}
+  }
  }catch(e){$('scanStatus').textContent='Ошибка: '+e;$('sourceBadge').textContent='Нет ответа';$('sourceBadge').className='pill warn';}
  finally{$('scanBtn').disabled=false;$('scanBtn').textContent='Обновить данные';}
 }
