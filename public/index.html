@@ -128,11 +128,11 @@ async function scan(){
   }
   lastMatches=matches;
   const names=bookmakerNames(b.data),fb=names.filter(n=>/fonbet|фонбет/i.test(n)),wl=names.filter(n=>/winline|винлайн/i.test(n));
-  $('sourceBadge').textContent='API отвечает';$('sourceBadge').className='pill good';
+  $('sourceBadge').textContent='Fallback API отвечает · Fonbet/Winline не подключены';$('sourceBadge').className='pill warn';
   $('mCount').textContent=matches.length;$('oCount').textContent='0';$('aCount').textContent='0';
   $('updated').textContent=new Date().toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'});lastScanAt=Date.now();
   $('scanStatus').textContent='BetScoper отвечает. В каталоге букмекеров: '+books.length+'; Fonbet: '+fb.length+'; Winline: '+wl.length+'. Проверяю коэффициенты максимум для 5 событий.';
-  $('diagStatus').textContent='BetScoper: bookmakers HTTP '+b.status+'; matches HTTP '+m.status+'. Каталог БК не подтверждает наличие коэффициентов.';
+  $('diagStatus').textContent='Резервный источник BetScoper: bookmakers HTTP '+b.status+'; matches HTTP '+m.status+'. Прямые адаптеры Fonbet/Winline не подключены. Сам ответ API не считается проверкой букмекерских коэффициентов.';
   $('raw').textContent=JSON.stringify(lastRaw,null,2).slice(0,24000);
   $('matches').innerHTML=matches.length?matches.map((x,i)=>'<article class="match"><div class="matchhead"><div><div class="matchname">'+esc(getName(x))+'</div><div class="tag">'+esc(sportName(x))+' · '+esc(matchTime(x))+'</div></div><button data-odds="'+i+'">Проверить коэффициенты</button></div><div class="muted sectiongap" id="odds-'+i+'">Коэффициенты ещё не запрашивались.</div></article>').join(''):'<div class="warn">API успешно ответил, но список событий пуст. Это уже пустой ответ поставщика, а не HTTP-ошибка.</div>';
   $('matchHint').textContent=matches.length+' событий';
