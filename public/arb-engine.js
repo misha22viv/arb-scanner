@@ -89,11 +89,13 @@
       if(Array.isArray(x)){for(let i=x.length-1;i>=0;i--)stack.push(x[i]);continue;}
       const book=bookmaker(first(x,["bookmaker","bookmaker_name","book","bookie","source"]));
       const market=canonicalMarket(first(x,["market","market_name","marketName","name"]));
+      const period=String(first(x,["period","period_name","time_period"])||"UNSPECIFIED").toUpperCase();
+      const allowedPeriod=["UNSPECIFIED","FULL_TIME","FT","MATCH"].includes(period);
       const outcome=canonicalOutcome(first(x,["outcome","selection","outcome_name","selection_name","factor_name"]));
       const odd=decimal(first(x,["odds","odd","coefficient","coefficient_value","value","price"]));
-      if(book&&market&&outcome&&odd){
-        const id=[book,market,outcome,odd].join("|");
-        if(!seen.has(id)){seen.add(id);rows.push({book,market,outcome,odd,active:x.is_active!==false&&x.active!==false&&x.suspended!==true});}
+      if(book&&market&&outcome&&odd&&allowedPeriod){
+        const id=[book,market,period,outcome,odd].join("|");
+        if(!seen.has(id)){seen.add(id);rows.push({book,market:market+"|"+period,outcome,odd,active:x.is_active!==false&&x.active!==false&&x.suspended!==true});}
       }
       for(const [k,v] of Object.entries(x)){
         if(v&&typeof v==="object") stack.push(v);
