@@ -63,8 +63,9 @@
   }
   function canonicalMarket(v) {
     const s=String(v||"").toLowerCase().replace(/ё/g,"е").replace(/[^\p{L}\p{N}]+/gu," ").trim();
-    if(/(^| )(1x2|match result|full time result|исход матча|победа в основное время)( |$)/.test(s)) return "FT_1X2";
-    if(/(^| )(moneyline|match winner|победитель матча|победа в матче)( |$)/.test(s)) return "MATCH_WINNER";
+    if(/\b(first half|1st half|second half|2nd half|первый тайм|второй тайм|1 тайм|2 тайм|период|четверть|сет)\b/.test(s)) return null;
+    if(["1x2","match result","full time result","исход матча","результат матча"].includes(s)) return "FT_1X2";
+    if(["moneyline 2 way","2 way moneyline","победитель 2 исхода"].includes(s)) return "TWO_WAY";
     return null;
   }
   function canonicalOutcome(v) {
@@ -106,7 +107,7 @@
     for(const r of rows){const k=r.market;if(!groups.has(k))groups.set(k,[]);groups.get(k).push(r);}
     const found=[];
     for(const [market,list] of groups){
-      const required=market==="FT_1X2"?["HOME","DRAW","AWAY"]:["HOME","AWAY"];
+      const required=market.startsWith("FT_1X2")?["HOME","DRAW","AWAY"]:["HOME","AWAY"];
       const best=required.map(outcome=>{
         const options=list.filter(x=>x.outcome===outcome).sort((a,b)=>b.odd-a.odd);
         return options[0]||null;
