@@ -6,7 +6,7 @@ module.exports = (_req, res) => {
     service: "arb-scanner",
     mode: "read-only",
     primaryProvider: "Fonbet + Winline public sources",
-    primaryProviderStatus: "not_connected_or_verified",
+    primaryProviderStatus: "authorized_feed_required",\n    directAdapters: { Fonbet: "adapter_ready_feed_not_configured", Winline: "adapter_ready_feed_not_configured" },
     fallbackProvider: "BetScoper",
     fallbackProviderStatus: "documentation_known_live_payload_unverified",
     capabilities: ["event_normalization", "conservative_arbitrage_engine", "manual_calculator", "canonical_odds_schema", "conservative_cross_book_engine", "local_browser_history", "browser_notifications", "fallback_bookmakers", "fallback_matches", "fallback_match_odds"],
