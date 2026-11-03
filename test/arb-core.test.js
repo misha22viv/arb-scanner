@@ -6,6 +6,10 @@ const a=C.normalizeEvent({id:1,sport:"football",league:"Premier League",home:"М
 const b=C.normalizeEvent({id:2,sport:"football",league:"Premier League",home:"Manchester City",away:"Arsenal",start_time:now+10*60000},"Winline");
 assert.equal(C.matchEvents(a,b).matched,true);
 assert.equal(C.matchEvents(a,{...b,sport:"hockey"}).reason,"sport_mismatch");
+const reversed={...b,home:b.away,away:b.home};
+assert.equal(C.matchEvents(a,reversed).swapped,true);
+assert.equal(C.remapOutcome("home",true),"away");
+assert.equal(C.matchEvents(a,{...b,league:"La Liga"}).reason,"league_mismatch");
 assert.equal(C.matchEvents(a,{...b,startTime:now+4*3600000}).reason,"start_time_mismatch");
 const rows=[
  {book:"Fonbet",market:"1x2|full time||regulation",outcome:"home",odd:2.2,active:true},
