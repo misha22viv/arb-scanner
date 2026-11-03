@@ -4,7 +4,7 @@
 const KEY="arb-scanner-history-v1",MAX=500;
 function read(){try{const x=JSON.parse(localStorage.getItem(KEY)||"[]");return Array.isArray(x)?x:[];}catch(_){return [];}}
 function write(rows){try{localStorage.setItem(KEY,JSON.stringify(rows.slice(-MAX)));return true;}catch(_){return false;}}
-function fingerprint(x){return [x.eventKey,x.market,x.outcome,x.book,x.odd].join("|");}
+function fingerprint(x){return [x.eventKey,x.market,x.outcome,x.book].join("|");}
 function record(snapshot){
  const rows=read(),prior=rows.slice().reverse().find(x=>x.eventKey===snapshot.eventKey)||null,changes=[];
  const previous=new Map((prior?.quotes||[]).map(q=>[fingerprint(q),q]));
