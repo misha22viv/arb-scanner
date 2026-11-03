@@ -70,7 +70,7 @@ table{width:100%;border-collapse:collapse;font-size:13px;margin-top:10px}td,th{t
 </section>
 <footer class="note">Личный аналитический инструмент. Коэффициенты могут измениться до принятия ставки; расчёт не гарантирует прибыль. Данные источника могут быть неполными или задержанными.</footer>
 </main>
-<script src="/arb-engine.js"></script>\n<script src="/arb-core.js"></script>\n<script src="/arb-history.js"></script>
+<script src="/arb-engine.js"></script>\n<script src="/arb-core.js"></script>\n<script src="/providers/fonbet.js"></script>\n<script src="/providers/winline.js"></script>\n<script src="/arb-history.js"></script>
 <script>
 const $=id=>document.getElementById(id);let lastRaw=null,lastMatches=[],lastOdds=[],lastScanAt=null;
 function renderHistory(){if(!window.ArbHistory)return;const rows=ArbHistory.list(30);$('historyList').innerHTML=rows.length?rows.map(x=>'<div class="match"><div class="matchhead"><b>'+esc(x.eventKey)+'</b><span class="tag">'+new Date(x.at).toLocaleString('ru-RU')+'</span></div><div class="tag">Коэффициентов: '+x.quotes.length+' · изменений: '+x.changes.length+'</div>'+(x.changes.length?'<div class="note">'+x.changes.slice(0,4).map(c=>c.type==='changed'?esc(c.quote.book)+' '+esc(c.quote.outcome)+': '+fmt(c.before)+' → '+fmt(c.quote.odd):'Новый коэффициент '+esc(c.quote.book)+' '+esc(c.quote.outcome)+' @ '+fmt(c.quote.odd)).join('<br>')+'</div>':'')+'</div>').join(''):'История пока пуста.';}
@@ -94,7 +94,7 @@ async function scan(){
   const names=bookmakerNames(b.data);const fb=names.filter(n=>/fonbet|фонбет/i.test(n)),wl=names.filter(n=>/winline|винлайн/i.test(n));
   $('sourceBadge').textContent=b.ok&&m.ok?'Резервный источник отвечает':'Проблема источника';$('sourceBadge').className='pill '+(b.ok&&m.ok?'good':'warn');
   $('mCount').textContent=matches.length;$('oCount').textContent='—';$('aCount').textContent='0';$('updated').textContent=new Date().toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'});lastScanAt=Date.now();
-  $('scanStatus').innerHTML='РЕЗЕРВ BetScoper · букмекеров в ответе: '+books.length+'. Fonbet: '+fb.length+'; Winline: '+wl.length+'. Статус матчей: HTTP '+m.status+'. Наличие в каталоге ещё не подтверждает наличие коэффициентов.';
+  $('scanStatus').innerHTML='РЕЗЕРВ BetScoper · букмекеров в ответе: '+books.length+'. Fonbet: '+fb.length+'; Winline: '+wl.length+'. Статус матчей: HTTP '+m.status+'. Наличие в каталоге ещё не подтверждает наличие коэффициентов. Прямые адаптеры Fonbet/Winline пока ожидают разрешённый поток данных.';
   $('diagStatus').textContent='РЕЗЕРВ BetScoper: bookmakers HTTP '+b.status+'; matches HTTP '+m.status+'. Найдены в каталоге: Fonbet '+fb.length+', Winline '+wl.length+'. Это не проверка фактического покрытия odds.';
   $('raw').textContent=JSON.stringify(lastRaw,null,2).slice(0,24000);
   $('matches').innerHTML=matches.length?matches.map((x,i)=>'<article class="match"><div class="matchhead"><div><div class="matchname">'+esc(getName(x))+'</div><div class="tag">'+esc(sportName(x))+' · '+esc(matchTime(x))+'</div></div><button data-odds="'+i+'">Проверить коэффициенты</button></div><div class="muted sectiongap" id="odds-'+i+'">Коэффициенты ещё не запрашивались.</div></article>').join(''):'<div class="warn">API не вернул список матчей в ожидаемом формате. Смотри сырой ответ в разделе «Диагностика».</div>';
