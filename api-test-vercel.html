@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#101827">
+<title>Проверка источника коэффициентов</title>
+<style>
+body{margin:0;background:#0b1220;color:#eef4ff;font:16px/1.5 system-ui,sans-serif}
+main{max-width:760px;margin:auto;padding:22px 16px}
+h1{font-size:22px}button{width:100%;padding:14px;border:0;border-radius:10px;background:#2768ad;color:white;font-weight:700;font-size:16px}
+.card{background:#131e30;border:1px solid #293951;border-radius:12px;padding:14px;margin:12px 0}
+pre{white-space:pre-wrap;overflow-wrap:anywhere;color:#c9d8ee;font-size:12px}
+small{color:#9aabc3}
+.good{color:#35d49a}.bad{color:#ff8790}
+</style>
+</head>
+<body><main>
+<h1>Проверка данных BetScoper</h1>
+<p><small>Только публичный API, без входа в букмекерские аккаунты и без ставок.</small></p>
+<button id="run">Проверить источник</button>
+<div id="out"></div>
+<script>
+const out=document.getElementById("out");
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+async function check(label,url){
+ const card=document.createElement("section");card.className="card";card.innerHTML="<b>"+esc(label)+"</b><p>Проверка…</p>";out.appendChild(card);
+ try{
+  const r=await fetch(url,{headers:{Accept:"application/json"}});
+  const t=await r.text();let data;try{data=JSON.parse(t)}catch{data=t}
+  card.innerHTML="<b>"+esc(label)+"</b><p class='"+(r.ok?"good":"bad")+"'>HTTP "+r.status+"</p><pre>"+esc(JSON.stringify(data,null,2).slice(0,10000))+"</pre>";
+  return {ok:r.ok,data};
+ }catch(e){card.innerHTML="<b>"+esc(label)+"</b><p class='bad'>Ошибка: "+esc(e)+"</p>";return {ok:false};}
+}
+document.getElementById("run").onclick=async()=>{
+ out.innerHTML="";
+ const b=await check("1. Список букмекеров","/api/betscoper?resource=bookmakers");
+ const m=await check("2. Предстоящие футбольные матчи","/api/betscoper?resource=matches&sport=football&status=scheduled&per_page=20");
+ const bookmakers=Array.isArray(b.data?.data)?b.data.data:(Array.isArray(b.data)?b.data:[]);
+ const found=bookmakers.filter(x=>/fonbet|фонбет|winline|винлайн/i.test(JSON.stringify(x)));
+ const matches=Array.isArray(m.data?.data)?m.data.data:[];
+ const summary=document.createElement("section");summary.className="card";
+ summary.innerHTML="<b>3. Предварительная проверка покрытия</b><p>Найдено записей букмекеров по Fonbet/Winline: "+found.length+"</p><pre>"+esc(JSON.stringify(found,null,2))+"</pre><p>Найдено матчей: "+matches.length+"</p>";
+ out.appendChild(summary);
+ if(matches[0]?.slug){
+  const slug=encodeURIComponent(matches[0].slug);
+  await check("4. Коэффициенты первого матча ("+matches[0].slug+")","/api/betscoper?resource=odds&slug="+slug);
+ }
+};
+</script>
+</main></body></html>
