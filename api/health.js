@@ -9,7 +9,7 @@ module.exports = (_req, res) => {
     primaryProviderStatus: "not_connected_or_verified",
     fallbackProvider: "BetScoper",
     fallbackProviderStatus: "documentation_known_live_payload_unverified",
-    capabilities: ["event_normalization", "conservative_arbitrage_engine", "manual_calculator", "fallback_bookmakers", "fallback_matches", "fallback_match_odds"],
+    capabilities: ["event_normalization", "conservative_arbitrage_engine", "manual_calculator", "canonical_odds_schema", "conservative_cross_book_engine", "local_browser_history", "browser_notifications", "fallback_bookmakers", "fallback_matches", "fallback_match_odds"],
     bookmakerAccounts: false,
     betPlacement: false,
     checkedAt: new Date().toISOString()
