@@ -51,7 +51,8 @@
     const reverse=(editSimilarity(x.home,y.away)+editSimilarity(x.away,y.home))/2;
     const swapped=reverse>direct,score=Math.max(direct,reverse);
     const tx=timeMs(x.start),ty=timeMs(y.start);
-    if(tx!=null&&ty!=null&&Math.abs(tx-ty)>windowHours*3600000)return {matched:false,reason:"start_time_mismatch",score};
+    if(tx==null||ty==null)return {matched:false,reason:"missing_start_time",score};
+    if(Math.abs(tx-ty)>windowHours*3600000)return {matched:false,reason:"start_time_mismatch",score};
     const matched=score>=0.88;
     return {matched,swapped,score:Number(score.toFixed(3)),reason:matched?"team_names_match":"team_names_ambiguous"};
   }
