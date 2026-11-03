@@ -117,7 +117,7 @@
       });
       if(best.some(x=>!x)||new Set(best.map(x=>x.book)).size<2)continue;
       const inverse=best.reduce((s,x)=>s+1/x.odd,0),roi=(1/inverse-1)*100;
-      if(roi>minRoi)found.push({market,legs:best,roi,inverse});
+      if(roi>=minRoi)found.push({market,legs:best,roi,inverse});
     }
     return {rows,arbitrage:found};
   }
