@@ -46,7 +46,7 @@ table{width:100%;border-collapse:collapse;font-size:12px;margin-top:12px;overflo
  </div>
  <div class="card"><div class="row"><h2>Матчи</h2><span id="matchHint" class="muted">Пока нет загруженных данных</span></div><div id="matches" class="list"><div class="muted">Матчи появятся после проверки источника.</div></div></div>
  <div class="card"><h2>Вилки</h2><div id="arbs" class="muted">Пока нет подтверждённых вилок. Непонятная структура коэффициентов не будет интерпретироваться наугад.</div></div>
- <div class="card"><div class="row"><h2>История коэффициентов</h2><div class="actions"><button id="notifyBtn">Включить уведомления</button><button id="clearHistoryBtn">Очистить</button></div></div><div class="muted">История хранится только в этом браузере на этом устройстве. Записи пока будут поступать только из проверенных ответов резервного источника.</div><div id="historyList" class="list sectiongap">История пока пуста.</div></div>
+ <div class="card"><div class="row"><h2>История коэффициентов</h2><div class="actions"><button id="notifyBtn">Уведомления</button><button id="exportHistoryBtn">Скачать backup</button><button id="importHistoryBtn">Восстановить backup</button><button id="clearHistoryBtn">Очистить</button><input id="historyFile" type="file" accept="application/json,.json" class="hidden"></div></div><div class="muted">Хранилище: <b id="storageBadge">проверка…</b>. История в IndexedDB, локальный кэш — резерв. Для защиты при потере устройства регулярно скачивай резервную копию.</div><div id="historyList" class="list sectiongap">История пока пуста.</div></div>
 </section>
 
 <section id="calc" class="hidden">
@@ -72,7 +72,11 @@ table{width:100%;border-collapse:collapse;font-size:12px;margin-top:12px;overflo
 </section>
 <footer class="note">Личный аналитический инструмент. Коэффициенты могут измениться до принятия ставки; расчёт не гарантирует прибыль. Данные источника могут быть неполными или задержанными.</footer>
 </main>
-<script src="/arb-engine.js"></script>\n<script src="/arb-core.js"></script>\n<script src="/providers/fonbet.js"></script>\n<script src="/providers/winline.js"></script>\n<script src="/arb-history.js"></script>
+<script src="/arb-engine.js"></script>
+<script src="/arb-core.js"></script>
+<script src="/providers/fonbet.js"></script>
+<script src="/providers/winline.js"></script>
+<script src="/arb-history.js"></script>
 <script>
 const $=id=>document.getElementById(id);let lastRaw=null,lastMatches=[],lastOdds=[],lastScanAt=null;
 function renderHistory(){if(!window.ArbHistory)return;const rows=ArbHistory.list(30);$('historyList').innerHTML=rows.length?rows.map(x=>'<div class="match"><div class="matchhead"><b>'+esc(x.eventKey)+'</b><span class="tag">'+new Date(x.at).toLocaleString('ru-RU')+'</span></div><div class="tag">Коэффициентов: '+x.quotes.length+' · изменений: '+x.changes.length+'</div>'+(x.changes.length?'<div class="note">'+x.changes.slice(0,4).map(c=>c.type==='changed'?esc(c.quote.book)+' '+esc(c.quote.outcome)+': '+fmt(c.before)+' → '+fmt(c.quote.odd):'Новый коэффициент '+esc(c.quote.book)+' '+esc(c.quote.outcome)+' @ '+fmt(c.quote.odd)).join('<br>')+'</div>':'')+'</div>').join(''):'История пока пуста.';}
@@ -133,7 +137,11 @@ document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{document.querySelect
 $('market').onchange=()=>{const t=$('market').value==='3';$('fDraw').classList.toggle('hidden',!t);$('wDraw').classList.toggle('hidden',!t)};
 setInterval(()=>{if(!document.hidden&&!$('scanBtn').disabled)scan();},300000);
 $('notifyBtn').onclick=async()=>{const result=await ArbHistory.enableNotifications();$('notifyBtn').textContent=result==='granted'?'Уведомления включены':result==='denied'?'Уведомления запрещены':'Недоступно';};
-$('clearHistoryBtn').onclick=()=>{if(ArbHistory.clear())renderHistory();};
+$('clearHistoryBtn').onclick=()=>{if(confirm('Точно очистить всю локальную историю?')){if(ArbHistory.clear())renderHistory();}};
+$('exportHistoryBtn').onclick=()=>{const blob=new Blob([ArbHistory.exportBackup()],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='arb-scanner-backup-'+new Date().toISOString().slice(0,10)+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);};
+$('importHistoryBtn').onclick=()=>$('historyFile').click();
+$('historyFile').onchange=async e=>{const file=e.target.files&&e.target.files[0];if(!file)return;try{const result=await ArbHistory.restoreBackup(await file.text());renderHistory();$('storageBadge').textContent=ArbHistory.storageStatus();$('scanStatus').textContent='Backup восстановлен. Записей в истории: '+result.count;}catch(err){$('scanStatus').textContent='Ошибка импорта backup: '+err.message;}finally{e.target.value='';}};
+ArbHistory.ready.then(()=>{renderHistory();$('storageBadge').textContent=ArbHistory.storageStatus();}).catch(()=>{$('storageBadge').textContent=ArbHistory.storageStatus();});
 renderHistory();
 $('calcBtn').onclick=()=>{
  const three=$('market').value==='3',bank=Number($('bank').value),ids=three?['f1','f3','f2','w1','w3','w2']:['f1','f2','w1','w2'],vals=ids.map(id=>Number($(id).value));
