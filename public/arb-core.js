@@ -71,7 +71,7 @@ function findCrossBookArbitrage(rows,minRoi=0,bank=10000){
   const outcomes=market.startsWith("1x2|")?["home","draw","away"]:["home","away"];
   const legs=outcomes.map(o=>list.filter(r=>r.outcome===o).sort((a,b)=>b.odd-a.odd)[0]||null);
   if(legs.some(x=>!x)||new Set(legs.map(x=>x.book)).size<2)continue;
-  const result=calcArbitrage(legs,bank);if(result&&result.roi>minRoi)found.push({market,...result});
+  const result=calcArbitrage(legs,bank);if(result&&result.roi>=minRoi)found.push({market,...result});
  }
  return found;
 }
