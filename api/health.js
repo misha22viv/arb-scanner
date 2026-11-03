@@ -5,8 +5,11 @@ module.exports = (_req, res) => {
     ok: true,
     service: "arb-scanner",
     mode: "read-only",
-    provider: "BetScoper",
-    capabilities: ["bookmakers", "scheduled_matches", "match_odds"],
+    primaryProvider: "Fonbet + Winline public sources",
+    primaryProviderStatus: "not_connected_or_verified",
+    fallbackProvider: "BetScoper",
+    fallbackProviderStatus: "documentation_known_live_payload_unverified",
+    capabilities: ["event_normalization", "conservative_arbitrage_engine", "manual_calculator", "fallback_bookmakers", "fallback_matches", "fallback_match_odds"],
     bookmakerAccounts: false,
     betPlacement: false,
     checkedAt: new Date().toISOString()
