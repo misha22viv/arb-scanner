@@ -84,7 +84,7 @@ async function scan(){
  $('scanBtn').disabled=true;$('scanBtn').textContent='Загружаю…';$('scanStatus').textContent='Проверяю букмекеров и список событий…';$('matches').innerHTML='';$('arbs').textContent='Проверяю структуру коэффициентов…';
  try{
   const [b,m]=await Promise.all([api('resource=bookmakers'),api('resource=matches&status=scheduled&per_page='+encodeURIComponent($('maxMatches').value)+( $('sport').value?'&sport='+encodeURIComponent($('sport').value):''))]);
-  lastRaw={bookmakers:b,matches:m};const books=rowsOf(b.data),matches=rowsOf(m.data).slice(0,Number($('maxMatches').value));lastMatches=matches;
+  lastRaw={bookmakers:b,matches:m};const books=rowsOf(b.data),rawMatches=rowsOf(m.data),matches=[];for(const candidate of rawMatches){if(!matches.some(existing=>window.ArbEngine.sameEvent(candidate,existing)))matches.push(candidate);if(matches.length>=Number($('maxMatches').value))break;}lastMatches=matches;
   const names=bookmakerNames(b.data);const fb=names.filter(n=>/fonbet|фонбет/i.test(n)),wl=names.filter(n=>/winline|винлайн/i.test(n));
   $('sourceBadge').textContent=b.ok&&m.ok?'Резервный источник отвечает':'Проблема источника';$('sourceBadge').className='pill '+(b.ok&&m.ok?'good':'warn');
   $('mCount').textContent=matches.length;$('oCount').textContent='—';$('aCount').textContent='0';$('updated').textContent=new Date().toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'});lastScanAt=Date.now();
