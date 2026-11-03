@@ -23,7 +23,7 @@ function matchEvents(a,b,opts={}){
  const maxMinutes=opts.maxMinutes??90,threshold=opts.threshold??0.9;
  if(!a.home||!a.away||!b.home||!b.away)return {matched:false,reason:"missing_teams"};
  if(!a.sport||!b.sport||a.sport!==b.sport)return {matched:false,reason:"sport_mismatch"};
- if(a.league&&b.league&&sim(a.league,b.league)<0.82)return {matched:false,reason:"league_mismatch"};
+ if(!a.league||!b.league)return {matched:false,reason:"missing_league"};\n if(sim(a.league,b.league)<0.82)return {matched:false,reason:"league_mismatch"};
  if(a.startTime==null||b.startTime==null)return {matched:false,reason:"missing_start_time"};
  const delta=Math.abs(a.startTime-b.startTime)/60000;if(delta>maxMinutes)return {matched:false,reason:"start_time_mismatch",deltaMinutes:Math.round(delta)};
  const direct=(sim(a.home,b.home)+sim(a.away,b.away))/2;
@@ -44,7 +44,7 @@ function marketKey(x){
  else return null;
  return [kind,period,line==null?"":String(line),settlement].join("|");
 }
-function outcomeKey(v){const s=norm(v);if(["1","home","home win","п1","победа 1","хозяева"].includes(s))return "home";if(["x","draw","tie","ничья"].includes(s))return "draw";if(["2","away","away win","п2","победа 2","гости"].includes(s))return "away";return null;}
+function remapOutcome(outcome,swapped){if(!swapped)return outcome;if(outcome==="home")return "away";if(outcome==="away")return "home";return outcome;}\nfunction outcomeKey(v){const s=norm(v);if(["1","home","home win","п1","победа 1","хозяева"].includes(s))return "home";if(["x","draw","tie","ничья"].includes(s))return "draw";if(["2","away","away win","п2","победа 2","гости"].includes(s))return "away";return null;}
 function activeRow(x){return x.is_active!==false&&x.active!==false&&x.suspended!==true&&x.status!=="suspended"&&x.status!=="closed"&&x.status!=="removed";}
 function normalizeOddsRows(rows,provider){
  const out=[];
@@ -74,5 +74,5 @@ function findCrossBookArbitrage(rows,minRoi=0,bank=10000){
  return found;
 }
 function freshness(v,now=Date.now(),warn=5,stale=10){const t=ms(v);if(t==null)return {state:"unknown",ageMinutes:null};const age=(now-t)/60000;if(age< -2)return {state:"future_timestamp",ageMinutes:Math.round(age)};return {state:age>=stale?"stale":age>=warn?"warning":"fresh",ageMinutes:Math.max(0,Math.round(age))};}
-root.ArbCore={VERSION,cleanName,normalizeEvent,matchEvents,normalizeOddsRows,findCrossBookArbitrage,calcArbitrage,freshness,marketKey,outcomeKey};
+root.ArbCore={VERSION,cleanName,normalizeEvent,matchEvents,normalizeOddsRows,findCrossBookArbitrage,calcArbitrage,freshness,marketKey,outcomeKey,remapOutcome};
 })(typeof window!=="undefined"?window:globalThis);
