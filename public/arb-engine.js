@@ -34,15 +34,18 @@
     if(typeof v==="number") return v < 1e12 ? v*1000 : v;
     const n=Date.parse(v); return Number.isFinite(n)?n:null;
   }
-  function sameEvent(a,b,windowHours=6) {
+  function matchEvent(a,b,windowHours=6) {
     const x=eventParts(a),y=eventParts(b);
-    if(!x.home||!x.away||!y.home||!y.away) return false;
-    const direct=x.home===y.home&&x.away===y.away;
-    const reverse=x.home===y.away&&x.away===y.home;
-    if(!direct&&!reverse) return false;
+    if(!x.home||!x.away||!y.home||!y.away) return {matched:false,reason:"missing_teams"};
+    const direct=(editSimilarity(x.home,y.home)+editSimilarity(x.away,y.away))/2;
+    const reverse=(editSimilarity(x.home,y.away)+editSimilarity(x.away,y.home))/2;
+    const swapped=reverse>direct,score=Math.max(direct,reverse);
     const tx=timeMs(x.start),ty=timeMs(y.start);
-    return tx==null||ty==null||Math.abs(tx-ty)<=windowHours*3600000;
+    if(tx!=null&&ty!=null&&Math.abs(tx-ty)>windowHours*3600000)return {matched:false,reason:"start_time_mismatch",score};
+    const matched=score>=0.88;
+    return {matched,swapped,score:Number(score.toFixed(3)),reason:matched?"team_names_match":"team_names_ambiguous"};
   }
+  function sameEvent(a,b,windowHours=6) { return matchEvent(a,b,windowHours).matched; }
   const first = (o,keys) => { for(const k of keys) if(o && o[k]!=null) return o[k]; return null; };
   function decimal(v) {
     if(typeof v==="string") v=Number(v.replace(",","."));
@@ -109,5 +112,5 @@
     const age=Math.max(0,(now-t)/60000);
     return {state:age>=staleMinutes?"stale":age>=warnMinutes?"warning":"fresh",ageMinutes:Math.round(age)};
   }
-  root.ArbEngine={cleanName,eventKey,sameEvent,collectRows,findArbitrage,freshness};
+  root.ArbEngine={cleanName,eventKey,matchEvent,sameEvent,collectRows,findArbitrage,freshness};
 })(typeof window!=="undefined"?window:globalThis);
