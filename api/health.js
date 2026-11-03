@@ -6,10 +6,11 @@ module.exports = (_req, res) => {
     service: "arb-scanner",
     mode: "read-only",
     primaryProvider: "Fonbet + Winline public sources",
-    primaryProviderStatus: "authorized_feed_required",\n    directAdapters: { Fonbet: "adapter_ready_feed_not_configured", Winline: "adapter_ready_feed_not_configured" },
+    primaryProviderStatus: "authorized_feed_required",
+    directAdapters: { Fonbet: "adapter_ready_feed_not_configured", Winline: "adapter_ready_feed_not_configured" },
     fallbackProvider: "BetScoper",
     fallbackProviderStatus: "documentation_known_live_payload_unverified",
-    capabilities: ["event_normalization", "conservative_arbitrage_engine", "manual_calculator", "canonical_odds_schema", "conservative_cross_book_engine", "local_browser_history", "browser_notifications", "fallback_bookmakers", "fallback_matches", "fallback_match_odds"],
+    capabilities: ["event_normalization", "conservative_arbitrage_engine", "manual_calculator", "canonical_odds_schema", "conservative_cross_book_engine", "indexeddb_history", "portable_history_backup", "browser_notifications", "fallback_bookmakers", "fallback_matches", "fallback_match_odds"],
     bookmakerAccounts: false,
     betPlacement: false,
     checkedAt: new Date().toISOString()
